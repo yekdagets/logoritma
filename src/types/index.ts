@@ -13,6 +13,6 @@ export interface LogoRequest {
 }
 
 export type RootStackParamList = {
-  Input: undefined;
+  Input: { resetStatus?: boolean };
   Output: { requestId: string };
 };

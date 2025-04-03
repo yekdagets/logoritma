@@ -1,3 +1,4 @@
+import { ImageSourcePropType } from "react-native";
 import { LogoStyle } from "../types";
 
 export const COLLECTION_NAMES = {
@@ -7,13 +8,33 @@ export const COLLECTION_NAMES = {
 export const LOGO_STYLES: Array<{
   id: LogoStyle;
   label: string;
-  icon: string;
+  icon: ImageSourcePropType;
 }> = [
-  { id: "no-style", label: "No Style", icon: "circle-outline" },
-  { id: "minimalist", label: "Minimalist", icon: "circle-outline" },
-  { id: "abstract", label: "Abstract", icon: "circle-outline" },
-  { id: "mascot", label: "Mascot", icon: "circle-outline" },
-  { id: "neo", label: "Neo", icon: "circle-outline" },
+  {
+    id: "no-style",
+    label: "No Style",
+    icon: require("../../assets/logo-styles-images/no-style.png"),
+  },
+  {
+    id: "monogram",
+    label: "Monogram",
+    icon: require("../../assets/logo-styles-images/monogram.png"),
+  },
+  {
+    id: "abstract",
+    label: "Abstract",
+    icon: require("../../assets/logo-styles-images/abstract.png"),
+  },
+  {
+    id: "mascot",
+    label: "Mascot",
+    icon: require("../../assets/logo-styles-images/mascot.png"),
+  },
+  {
+    id: "neo",
+    label: "Neo",
+    icon: require("../../assets/logo-styles-images/neo.png"),
+  },
 ];
 
 export const SCREEN_TITLES = {
@@ -30,17 +51,24 @@ export const APP_TEXT = {
 export const CHIP_STATUS = {
   PROCESSING: {
     title: "Creating your design...",
-    helper: "Tap to see progress",
+    helper: "Ready in 2 minutes",
   },
   DONE: {
     title: "Your design is ready!",
-    helper: "Tap to see it",
+    helper: "Tap to see it.",
   },
   ERROR: {
     title: "Oops! Something went wrong",
-    helper: "Click to try again",
+    helper: "Click to try again.",
   },
 };
 
 export const DEFAULT_LOGO_URL =
   "https://via.placeholder.com/300/ffffff?text=HC";
+
+export const SURPRISE_ME_PROMPTS = [
+  "A minimalist tech logo with abstract circuit patterns",
+  "A playful mascot logo for a coffee shop with a fox character",
+  "A professional logo for a law firm using balanced serif fonts",
+  "A blue lion logo reading 'HEXA' in bold letters",
+];
