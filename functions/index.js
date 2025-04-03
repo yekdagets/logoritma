@@ -1,4 +1,4 @@
-const functions = require("firebase-functions");
+const { onDocumentCreated } = require("firebase-functions/v2/firestore");
 const admin = require("firebase-admin");
 admin.initializeApp();
 
@@ -7,13 +7,20 @@ const db = admin.firestore();
 const getRandomProcessingTime = () =>
   Math.floor(Math.random() * (60000 - 30000 + 1) + 30000);
 
-exports.processLogoGeneration = functions.firestore
-  .document("logo_requests/{requestId}")
-  .onCreate(async (snapshot, context) => {
-    const requestId = context.params.requestId;
+exports.processLogoGeneration = onDocumentCreated(
+  "logo_requests/{requestId}",
+  async (event) => {
+    const snapshot = event.data;
+    if (!snapshot) {
+      console.log("No data associated with the event");
+      return;
+    }
+
+    const requestId = event.params.requestId;
     const requestData = snapshot.data();
 
     if (requestData.status !== "processing") {
+      console.log(`Request ${requestId} is not in processing state, skipping`);
       return null;
     }
 
@@ -23,7 +30,7 @@ exports.processLogoGeneration = functions.firestore
       const processingTime = getRandomProcessingTime();
       await new Promise((resolve) => setTimeout(resolve, processingTime));
 
-      const mockLogoUrl = "https://via.placeholder.com/300/ffffff?text=HC";
+      const mockLogoUrl = "https://fakeimg.pl/600x400";
 
       await db.collection("logo_requests").doc(requestId).update({
         status: "done",
@@ -43,4 +50,5 @@ exports.processLogoGeneration = functions.firestore
 
       return null;
     }
-  });
+  }
+);
