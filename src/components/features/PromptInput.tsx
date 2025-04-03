@@ -26,7 +26,7 @@ function PromptInput({
       <View style={styles.labelContainer}>
         <Text style={styles.label}>Enter Your Prompt</Text>
         <TouchableOpacity onPress={onSurpriseMe}>
-          <Text style={styles.surpriseMeText}>Surprise me</Text>
+          <Text style={styles.surpriseMeText}>🎲 Surprise me</Text>
         </TouchableOpacity>
       </View>
 
@@ -63,16 +63,16 @@ const styles = StyleSheet.create({
   },
   label: {
     color: colors.text,
-    fontSize: 16,
-    fontWeight: "600",
     fontFamily: typography.fontFamily,
+    fontSize: 20,
+    fontWeight: "800",
   },
   surpriseMeText: {
+    color: colors.text,
     fontFamily: typography.fontFamily,
     fontWeight: "400",
     fontSize: 13,
-    textAlign: "center",
-    color: colors.text,
+    lineHeight: 18,
   },
   inputContainer: {
     backgroundColor: colors.cardBackground,

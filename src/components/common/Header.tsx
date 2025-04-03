@@ -8,11 +8,15 @@ interface HeaderProps {
 
 function Header({ title, rightComponent }: HeaderProps) {
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView>
       <View style={styles.container}>
-        <Text style={styles.title}>{title}</Text>
-        {rightComponent && (
-          <View style={styles.rightComponent}>{rightComponent}</View>
+        {rightComponent ? (
+          <>
+            <Text style={styles.title}>{title}</Text>
+            <View>{rightComponent}</View>
+          </>
+        ) : (
+          <Text style={styles.centeredTitle}>{title}</Text>
         )}
       </View>
     </SafeAreaView>
@@ -20,23 +24,27 @@ function Header({ title, rightComponent }: HeaderProps) {
 }
 
 const styles = StyleSheet.create({
-  safeArea: {},
   container: {
     height: 60,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
     paddingHorizontal: 16,
+    paddingVertical: 12,
+    justifyContent: "space-between",
   },
   title: {
+    color: colors.text,
+    fontSize: 22,
+    fontFamily: typography.fontFamily,
+    fontWeight: "800",
+  },
+  centeredTitle: {
     color: colors.text,
     fontSize: 18,
     fontFamily: typography.fontFamily,
     fontWeight: "600",
-  },
-  rightComponent: {
-    position: "absolute",
-    right: 16,
+    flex: 1,
+    textAlign: "center",
   },
 });
 

@@ -41,8 +41,8 @@ function CustomButton({
 
     return (
       <View style={styles.contentContainer}>
-        {icon && <View style={styles.iconContainer}>{icon}</View>}
         <Text style={[styles.text, textStyle]}>{title}</Text>
+        {icon && <View style={styles.iconContainer}>{icon}</View>}
       </View>
     );
   };
@@ -124,8 +124,8 @@ const styles = StyleSheet.create({
   },
   text: {
     color: colors.text,
-    fontSize: 16,
-    fontWeight: "600",
+    fontSize: 17,
+    fontWeight: "800",
     fontFamily: typography.fontFamily,
   },
   disabled: {
