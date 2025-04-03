@@ -2,23 +2,34 @@ import React, { useEffect, useState } from "react";
 import {
   View,
   StyleSheet,
-  Image,
   SafeAreaView,
   ActivityIndicator,
   Text,
+  TouchableOpacity,
+  Alert,
 } from "react-native";
-import { RouteProp, useRoute } from "@react-navigation/native";
+import { RouteProp, useRoute, useNavigation } from "@react-navigation/native";
 import { RootStackParamList } from "../types";
 import { colors, typography } from "../theme";
 import { SCREEN_TITLES } from "../constants";
 import { getLogoRequest } from "../services/logoService";
 import Header from "../components/common/Header";
+import PromptOutput from "../components/features/PromptOutput";
+import PreviewLogo from "../components/features/PreviewLogo";
 import { LogoRequest } from "../types";
+import { Ionicons } from "@expo/vector-icons";
+import { StackNavigationProp } from "@react-navigation/stack";
 
+type OutputScreenNavigationProp = StackNavigationProp<
+  RootStackParamList,
+  "Output"
+>;
 type OutputScreenRouteProp = RouteProp<RootStackParamList, "Output">;
 
 function OutputScreen() {
   const route = useRoute<OutputScreenRouteProp>();
+  const navigation = useNavigation<OutputScreenNavigationProp>();
+
   const { requestId } = route.params;
 
   const [logoData, setLogoData] = useState<LogoRequest | null>(null);
@@ -42,8 +53,19 @@ function OutputScreen() {
     fetchLogoData();
   }, [requestId]);
 
+  const handleCopyPrompt = () => {
+    Alert.alert("Copied", "Prompt copied to clipboard");
+  };
+
   const renderCloseButton = () => {
-    return <View style={styles.closeButtonContainer} />;
+    return (
+      <TouchableOpacity
+        style={styles.closeButton}
+        onPress={() => navigation.navigate("Input", { resetStatus: true })}
+      >
+        <Ionicons name="close" size={24} color={colors.text} />
+      </TouchableOpacity>
+    );
   };
 
   return (
@@ -65,17 +87,19 @@ function OutputScreen() {
           <View style={styles.errorContainer}>
             <Text style={styles.errorText}>{error}</Text>
           </View>
-        ) : logoData?.imageUrl ? (
-          <View style={styles.logoContainer}>
-            <Image
-              source={{ uri: logoData.imageUrl }}
-              style={styles.logoImage}
-              resizeMode="contain"
+        ) : logoData ? (
+          <>
+            <PreviewLogo imageUrl={logoData.imageUrl || ""} size="large" />
+
+            <PromptOutput
+              prompt={logoData.prompt}
+              style={logoData.style}
+              onCopy={handleCopyPrompt}
             />
-          </View>
+          </>
         ) : (
           <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>No logo image available</Text>
+            <Text style={styles.errorText}>No logo data available</Text>
           </View>
         )}
       </View>
@@ -101,7 +125,6 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     padding: 16,
-    ...sharedStyles.centered,
   },
   loadingContainer: {
     flex: 1,
@@ -116,19 +139,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: "center",
   },
-  logoContainer: {
-    width: "100%",
-    height: 300,
-    backgroundColor: colors.cardBackground,
-    borderRadius: 12,
-    ...sharedStyles.centered,
-    overflow: "hidden",
-  },
-  logoImage: {
-    width: "100%",
-    height: "100%",
-  },
-  closeButtonContainer: {
+  closeButton: {
     padding: 8,
   },
 });
