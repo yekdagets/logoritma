@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   StyleSheet,
@@ -6,38 +6,59 @@ import {
   TouchableOpacity,
   Text,
   SafeAreaView,
+  Image,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
-import { RootStackParamList } from "../types";
+import { LogoRequest, RootStackParamList } from "../types";
 import { colors, typography } from "../theme";
-import { LOGO_STYLES, SCREEN_TITLES } from "../constants";
-import { createLogoRequest } from "../services/logoService";
+import {
+  COLLECTION_NAMES,
+  LOGO_STYLES,
+  SCREEN_TITLES,
+  SURPRISE_ME_PROMPTS,
+} from "../constants";
+import { createLogoRequest, getLogoRequest } from "../services/logoService";
 import Header from "../components/common/Header";
 import StatusChip from "../components/common/StatusChip";
 import CustomButton from "../components/common/CustomButton";
 import PromptInput from "../components/features/PromptInput";
 import { LogoStyle, GenerationStatus } from "../types";
+import { doc, onSnapshot } from "firebase/firestore";
+import { db } from "../services/firebase";
 
 type InputScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
   "Input"
 >;
-
-const SURPRISE_ME_PROMPTS = [
-  "A minimalist tech logo with abstract circuit patterns",
-  "A playful mascot logo for a coffee shop with a fox character",
-  "A professional logo for a law firm using balanced serif fonts",
-  "A blue lion logo reading 'HEXA' in bold letters",
-];
+type InputScreenRouteProp = RouteProp<RootStackParamList, "Input">;
 
 function InputScreen() {
   const navigation = useNavigation<InputScreenNavigationProp>();
+  const route = useRoute<InputScreenRouteProp>();
   const [prompt, setPrompt] = useState("");
   const [selectedStyle, setSelectedStyle] = useState<LogoStyle>("no-style");
   const [status, setStatus] = useState<GenerationStatus>("idle");
   const [currentRequestId, setCurrentRequestId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  const [logoData, setLogoData] = useState<LogoRequest | null>(null);
+
+  const handleRetry = () => {
+    setStatus("idle");
+    setCurrentRequestId(null);
+    setLogoData(null);
+  };
+
+  useEffect(() => {
+    if (route.params?.resetStatus) {
+      setStatus("idle");
+      setCurrentRequestId(null);
+      setLogoData(null);
+
+      navigation.setParams({ resetStatus: undefined });
+    }
+  }, [route.params]);
 
   const handleCreateLogo = async () => {
     if (!prompt.trim()) return;
@@ -45,7 +66,16 @@ function InputScreen() {
     try {
       setIsLoading(true);
       setStatus("processing");
+      setPrompt("");
 
+      // for viewing error state - testing purpose
+      if (prompt.toLowerCase().includes("error")) {
+        setTimeout(() => {
+          setStatus("error");
+          setIsLoading(false);
+        }, 2000);
+        return;
+      }
       const requestId = await createLogoRequest(prompt, selectedStyle);
       setCurrentRequestId(requestId);
 
@@ -68,12 +98,54 @@ function InputScreen() {
     }
   };
 
+  useEffect(() => {
+    if (!currentRequestId) return;
+
+    const unsubscribe = onSnapshot(
+      doc(db, COLLECTION_NAMES.LOGO_REQUESTS, currentRequestId),
+      (docSnapshot) => {
+        if (docSnapshot.exists()) {
+          const data = docSnapshot.data();
+          console.log(`Document updated - new status: ${data.status}`);
+
+          setStatus(data.status);
+
+          if (data.status === "error") {
+            console.error("Logo generation failed");
+          }
+        }
+      },
+      (error) => {
+        console.error("Error listening to document:", error);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [currentRequestId]);
+
+  useEffect(() => {
+    if (currentRequestId && status === "done") {
+      getLogoRequest(currentRequestId)
+        .then((data) => {
+          setLogoData(data);
+        })
+        .catch((error) => {
+          console.error("Error fetching logo data:", error);
+        });
+    }
+  }, [currentRequestId, status]);
+
   return (
     <SafeAreaView style={styles.container}>
       <Header title={SCREEN_TITLES.INPUT} />
 
       {status !== "idle" && (
-        <StatusChip status={status} onPress={handleStatusChipPress} />
+        <StatusChip
+          status={status}
+          onPress={handleStatusChipPress}
+          logoUrl={status === "done" ? logoData?.imageUrl : undefined}
+          onRetry={handleRetry}
+        />
       )}
 
       <View style={styles.content}>
@@ -89,21 +161,32 @@ function InputScreen() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.stylesContainer}
         >
-          {LOGO_STYLES.map((style) => (
-            <TouchableOpacity
-              key={style.id}
-              style={[
-                styles.styleItem,
-                selectedStyle === style.id && styles.selectedStyleItem,
-              ]}
-              onPress={() => setSelectedStyle(style.id)}
-            >
-              <View style={styles.styleIconContainer}>
-                {/* icon coming here */}
-              </View>
-              <Text style={styles.styleText}>{style.label}</Text>
-            </TouchableOpacity>
-          ))}
+          {LOGO_STYLES.map((style) => {
+            const isSelected = selectedStyle === style.id;
+            return (
+              <TouchableOpacity
+                key={style.id}
+                onPress={() => setSelectedStyle(style.id)}
+              >
+                <Image
+                  source={style.icon}
+                  style={[
+                    styles.styleIcon,
+                    isSelected && styles.selectedStyleIcon,
+                  ]}
+                  resizeMode="cover"
+                />
+                <Text
+                  style={[
+                    styles.styleText,
+                    isSelected && styles.selectedStyleText,
+                  ]}
+                >
+                  {style.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </ScrollView>
       </View>
 
@@ -117,6 +200,13 @@ function InputScreen() {
             colors.primaryGradientStart,
             colors.primaryGradientEnd,
           ]}
+          icon={
+            <Image
+              source={require("../../assets/stars.png")}
+              style={{ width: 20, height: 20 }}
+              resizeMode="contain"
+            />
+          }
         />
       </View>
     </SafeAreaView>
@@ -139,6 +229,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
+    ...sharedStyles.centered,
     flex: 1,
     padding: 16,
   },
@@ -147,35 +238,32 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     marginBottom: 12,
+    alignSelf: "flex-start",
   },
   stylesContainer: {
     paddingVertical: 8,
     gap: 12,
   },
-  styleItem: {
-    width: 80,
-    height: 100,
-    borderRadius: 12,
-    backgroundColor: colors.cardBackground,
-    ...sharedStyles.centered,
-    padding: 8,
-  },
-  selectedStyleItem: {
-    borderWidth: 2,
-    borderColor: colors.primaryGradientStart,
-  },
-  styleIconContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: colors.background,
+  styleIcon: {
+    width: 90,
+    height: 90,
+    borderRadius: 13.71,
     marginBottom: 8,
-    ...sharedStyles.centered,
+  },
+  selectedStyleIcon: {
+    borderWidth: 2,
+    borderColor: colors.border,
   },
   styleText: {
-    ...sharedStyles.text,
-    fontSize: 12,
+    fontFamily: typography.fontFamily,
+    fontSize: 13,
+    fontWeight: "400",
+    color: "#71717A",
     textAlign: "center",
+  },
+  selectedStyleText: {
+    fontWeight: "700",
+    color: colors.text,
   },
   buttonContainer: {
     padding: 16,

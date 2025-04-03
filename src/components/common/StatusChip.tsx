@@ -9,10 +9,14 @@ import { LinearGradient } from "expo-linear-gradient";
 import { GenerationStatus } from "../../types";
 import { colors, gradients, typography } from "../../theme";
 import { CHIP_STATUS } from "../../constants";
+import { Ionicons } from "@expo/vector-icons";
+import PreviewLogo from "../features/PreviewLogo";
 
 interface StatusChipProps {
   status: GenerationStatus;
   onPress?: () => void;
+  logoUrl?: string;
+  onRetry?: () => void;
 }
 
 type StatusConfig = {
@@ -20,7 +24,7 @@ type StatusConfig = {
     backgroundColor?: string;
     iconBackgroundColor: string;
     useGradient?: boolean;
-    icon?: React.ReactNode;
+    renderIcon: (logoUrl?: string) => React.ReactNode;
   };
 };
 
@@ -28,23 +32,29 @@ const statusConfig: StatusConfig = {
   idle: {
     backgroundColor: "transparent",
     iconBackgroundColor: "transparent",
+    renderIcon: () => null,
   },
   processing: {
     backgroundColor: colors.cardBackground,
-    iconBackgroundColor: colors.cardBackground,
-    icon: <ActivityIndicator size="small" color={colors.text} />,
+    iconBackgroundColor: "#18181B",
+    renderIcon: () => <ActivityIndicator size="small" color={colors.text} />,
   },
   done: {
     useGradient: true,
-    iconBackgroundColor: "#4A3AFF",
+    iconBackgroundColor: "transparent",
+    renderIcon: (logoUrl) =>
+      logoUrl ? <PreviewLogo imageUrl={logoUrl} size="small" /> : null,
   },
   error: {
     backgroundColor: colors.error,
     iconBackgroundColor: colors.errorLight,
+    renderIcon: () => (
+      <Ionicons name="warning-outline" size={32} color="#FFFFFF" />
+    ),
   },
 };
 
-function StatusChip({ status, onPress }: StatusChipProps) {
+function StatusChip({ status, onPress, logoUrl, onRetry }: StatusChipProps) {
   if (status === "idle") {
     return null;
   }
@@ -89,12 +99,20 @@ function StatusChip({ status, onPress }: StatusChipProps) {
     );
   };
 
+  const handlePress = () => {
+    if (status === "error" && onRetry) {
+      onRetry();
+    } else if (onPress) {
+      onPress();
+    }
+  };
+
   return (
     <TouchableOpacity
       style={styles.container}
-      onPress={onPress}
+      onPress={handlePress}
       activeOpacity={0.8}
-      disabled={!onPress}
+      disabled={!onPress && !(status === "error" && onRetry)}
     >
       <View
         style={[
@@ -102,7 +120,7 @@ function StatusChip({ status, onPress }: StatusChipProps) {
           { backgroundColor: config.iconBackgroundColor },
         ]}
       >
-        {config.icon}
+        {config.renderIcon(logoUrl)}
       </View>
       <ContentWrapper>
         <Text style={styles.text}>{statusTexts.title}</Text>
@@ -119,6 +137,7 @@ const styles = StyleSheet.create({
     height: 70,
     borderRadius: 16,
     overflow: "hidden",
+    alignSelf: "center",
   },
   iconContainer: {
     width: 70,
