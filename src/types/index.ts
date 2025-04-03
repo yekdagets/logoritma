@@ -1,9 +1,4 @@
-export type LogoStyle =
-  | "no-style"
-  | "minimalist"
-  | "abstract"
-  | "mascot"
-  | "neo";
+export type LogoStyle = "no-style" | "monogram" | "abstract" | "mascot" | "neo";
 
 export type GenerationStatus = "idle" | "processing" | "done" | "error";
 
